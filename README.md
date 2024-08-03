@@ -1,4 +1,4 @@
-## Methods on Mac OS X
+## Run the programme on Mac OS X
 
 First, compile the programme using the `CMakeLists.txt` file like this.
 ```
