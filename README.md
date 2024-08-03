@@ -13,4 +13,6 @@ Then run the `./raytracer` in the `build` directory. You can use `> image.ppm` t
 ./raytracer > ../image.ppm
 ```
 
-Of course, you can replace `image.ppm` with any other filename you like, and the result of defualt settings has already been saved in the `image.ppm` file.
+Of course, you can replace `image.ppm` with any other filename you like, and the result of defualt settings has already been saved in the `image.png` file.
+
+![](image.png "Result of default settings")
