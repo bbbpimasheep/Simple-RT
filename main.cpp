@@ -116,7 +116,7 @@ int main() {
     auto stop = std::chrono::system_clock::now();
 
     auto minutes = std::chrono::duration_cast<std::chrono::minutes>(stop - start).count();
-    auto seconds = std::chrono::duration_cast<std::chrono::seconds>(stop - start).count() - 60*mins;
+    auto seconds = std::chrono::duration_cast<std::chrono::seconds>(stop - start).count() - 60*minutes;
     std::clog << "Render complete: \n";
     std::clog << "Time taken: " << minutes << " minutes & " << seconds << " seconds\n";
 
