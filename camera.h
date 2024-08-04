@@ -48,6 +48,7 @@ public:
     int image_width     = 1024;
     int sample_ppixel   = 16;
     int max_depth       = 10;
+    double roulette     = 0.8;
     double aspect_ratio = 1.0;
     double verticle_fov = 90.0;
 
@@ -92,15 +93,19 @@ private:
         sample_dv = pixel_dv / (spp_root+1);
     }
     Colour RayColour(const Ray& ray, const Shapes& world, int depth) {
+        /*
         if (depth <= 0)
             return Colour(0, 0, 0);
+        */
         Intersection isect;
         if (world.Intersect(ray, Interval(EPS_UNIT, POS_INF), isect)) {
             Colour attenuation;
             Ray scattered;
-            if (isect.material->Scatter(ray, isect, attenuation, scattered))
-                return attenuation * RayColour(scattered, world, depth-1);
-            return Colour(0, 0, 0);
+            if (RandomFloat() <= roulette && 
+                isect.material->Scatter(ray, isect, attenuation, scattered))
+                return attenuation * RayColour(scattered, world, depth-1) / roulette;
+            else 
+                return Colour(0, 0, 0);
         }
         double a = (ray.dir.y+1.0) * 0.5;
         return Lerp(Colour(1.0, 1.0, 1.0), Colour(0.5, 0.7, 1.0), a);

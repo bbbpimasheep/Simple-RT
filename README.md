@@ -16,3 +16,7 @@ Then run the `./raytracer` in the `build` directory. You can use `> image.ppm` t
 Of course, you can replace `image.ppm` with any other filename you like, and the result of defualt settings has already been saved in the `image.png` file.
 
 <img src="image.png">
+
+## References
+
+- [_Ray Tracing in One Weekend_](https://raytracing.github.io/books/RayTracingInOneWeekend.html)

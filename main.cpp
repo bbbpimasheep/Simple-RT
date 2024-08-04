@@ -99,9 +99,10 @@ int main() {
 
     Camera camera;
     camera.aspect_ratio  = 1.778;
-    camera.image_width   = 1024;
+    camera.image_width   = 1280;
     camera.sample_ppixel = 1024;
-    camera.max_depth     = 64;
+    // camera.max_depth  = 64;
+    camera.roulette      = 0.8;
 
     camera.verticle_fov  = 20;
     camera.view_up       = Vector3(0,1,0);
@@ -114,9 +115,10 @@ int main() {
     camera.RenderScene(scene);
     auto stop = std::chrono::system_clock::now();
 
+    auto minutes = std::chrono::duration_cast<std::chrono::minutes>(stop - start).count();
+    auto seconds = std::chrono::duration_cast<std::chrono::seconds>(stop - start).count() - 60*mins;
     std::clog << "Render complete: \n";
-    std::clog << "Time taken: " << std::chrono::duration_cast<std::chrono::minutes>(stop - start).count() << " minutes"
-              << "   " << std::chrono::duration_cast<std::chrono::seconds>(stop - start).count() << " seconds\n";
+    std::clog << "Time taken: " << minutes << " minutes & " << seconds << " seconds\n";
 
     return 0;
 }
