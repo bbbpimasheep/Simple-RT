@@ -20,3 +20,4 @@ Of course, you can replace `image.ppm` with any other filename you like, and the
 ## References
 
 - [_Ray Tracing in One Weekend_](https://raytracing.github.io/books/RayTracingInOneWeekend.html)
+- [_Physically Based Rendering:From Theory To Implementation_](https://pbr-book.org/)
