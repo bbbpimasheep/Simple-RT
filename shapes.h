@@ -2,10 +2,10 @@
 #ifndef SHAPES_H
 #define SHAPES_H
 
-#include "vector.h"
-#include "ray.h"
 #include "global.h"
-#include "interval.h" 
+#include "bounds.h"
+#include "ray.h"
+#include "maths.h"
 
 class Material;
 
@@ -30,17 +30,32 @@ public:
 
     // Methods
     virtual bool Intersect(const Ray& ray, Interval ray_time, Intersection& isect) const = 0;
+    virtual Bounds3 BBox() const = 0;
 };
 
 class Sphere : public Shapes {
 public:
     // Constructor & Destructor
+    // Staionary Sphere
     Sphere(const Point3& _centre, double _radius, shared_ptr<Material> _material)
-     : centre(_centre), radius(Max(_radius, EPS_DEUX)), material(_material) {}
+     : centre0(_centre), radius(Max(_radius, EPS_DEUX)), material(_material), moving(false) {
+        auto r_vec = Vector3(radius, radius, radius);
+        bbox = Bounds3(centre0-r_vec, centre0+r_vec);
+    }
+    // Moving Sphere
+    Sphere(const Point3& _centre1, const Point3& _centre2, double _radius, shared_ptr<Material> _material)
+     : centre0(_centre1), radius(Max(_radius, EPS_DEUX)), material(_material), moving(true) { 
+        auto r_vec = Vector3(radius, radius, radius);
+        auto bbox1 = Bounds3(_centre1-r_vec, _centre1+r_vec);
+        auto bbox2 = Bounds3(_centre2-r_vec, _centre2+r_vec);
+        bbox = Union(bbox1, bbox2);
+        shift = _centre2 - _centre1; 
+    }
     ~Sphere() = default;
 
     // Methods
     bool Intersect(const Ray& ray, Interval ray_time, Intersection& isect) const override {
+        Point3 centre = moving ? GetCentre(ray.time) : centre0;
         Vector3 vec_oc = centre - ray.org;
         auto A = Length2(ray.dir);
         auto Б = Dot(ray.dir, vec_oc);
@@ -62,11 +77,21 @@ public:
         isect.material = material;
         return true;
     }
+    Bounds3 BBox() const override {
+        return bbox;
+    }
 
+private:
     // Members
-    Point3 centre;
+    Point3 centre0;
     double radius;
+    bool   moving;
+    Vector3 shift;
+    Bounds3 bbox;
     shared_ptr<Material> material;
+
+    // Methods
+    Point3 GetCentre(double time) const { return centre0 + time * shift; }
 };
 
 // Inline Functions

@@ -6,7 +6,7 @@
 
 #include "global.h"
 #include "shapes.h"
-#include "colour.h"
+#include "maths.h"
 #include "material.h"
 
 class Camera {
@@ -26,7 +26,9 @@ public:
                 auto pixel_colour = Colour(0, 0, 0);
                 for (int s = 0; s < sample_ppixel; s += 1) {
                     Ray ray = CastRay(x, y, s);
+                    // std::clog << "Rendering pixel (" << x << ", " << y << ") sample " << s << " \n";
                     pixel_colour += RayColour(ray, scene, max_depth);
+                    // std::clog << "Pixel Colour: " << Str(pixel_colour) << "\n";
                 }
                 frame_buffer[y * image_width + x] = pixel_colour * spp_inv;
             }
@@ -93,12 +95,9 @@ private:
         sample_dv = pixel_dv / (spp_root+1);
     }
     Colour RayColour(const Ray& ray, const Shapes& world, int depth) {
-        /*
-        if (depth <= 0)
-            return Colour(0, 0, 0);
-        */
         Intersection isect;
         if (world.Intersect(ray, Interval(EPS_UNIT, POS_INF), isect)) {
+            // std::clog << "Tracing Ray: " << Str(ray) << "\n";
             Colour attenuation;
             Ray scattered;
             if (RandomFloat() <= roulette && 
@@ -119,7 +118,8 @@ private:
                         ? SampleLens()
                         : camera_centre;
         auto ray_direction = Normalize(pixel_sample - ray_origin);
-        return Ray(ray_origin, ray_direction);
+        auto ray_time = RandomFloat();
+        return Ray(ray_origin, ray_direction, ray_time);
     }
     Ray CastRay(int x, int y) {
         auto sample_offset = Sample05();
@@ -129,8 +129,9 @@ private:
         auto ray_origin = (defocus_angle > 0.0)
                         ? SampleLens()
                         : camera_centre;
-        auto ray_direction = Normalize(pixel_sample - ray_origin);   
-        return Ray(ray_origin, ray_direction);                                     
+        auto ray_direction = Normalize(pixel_sample - ray_origin);
+        auto ray_time = RandomFloat();
+        return Ray(ray_origin, ray_direction, ray_time);                                     
     }
     Point3 Sample05() {
         return Point3(RandomFloat()-.5f, RandomFloat()-.5f, 0);

@@ -14,7 +14,10 @@ public:
     Scene(shared_ptr<Shapes> object) { objects.push_back(object); }
 
     // Methods
-    void AddObject(shared_ptr<Shapes> object) { objects.push_back(object); }
+    void AddObject(shared_ptr<Shapes> object) { 
+        objects.push_back(object); 
+        bounds = Union(bounds, object->BBox());
+    }
     void Clear() { objects.clear(); }
     bool Intersect(const Ray& ray, Interval ray_time, Intersection& isect) const override {
         Intersection temp_isect;
@@ -29,9 +32,13 @@ public:
         }
         return happened;
     }
+    Bounds3 BBox() const override { return bounds; }
 
     // Members
     std::vector<shared_ptr<Shapes>> objects;
+
+private:
+    Bounds3 bounds;
 };
 
 

@@ -4,7 +4,7 @@
 
 #include "global.h"
 #include "ray.h"
-#include "colour.h"
+#include "maths.h"
 #include "shapes.h"
 
 class Material {
@@ -28,7 +28,7 @@ public:
     const override {
         auto random_dir = isect.normal + RandomVec3Unit();
         Unitize(random_dir);
-        scattered = Ray(isect.coords, random_dir);
+        scattered = Ray(isect.coords, random_dir, ray_in.time);
         attenuation = albedo;
         return true;
     }
@@ -48,7 +48,7 @@ public:
     const override {
         auto reflect_dir = Reflect(-ray_in.dir, isect.normal) + RandomVec3Unit() * fuzziness;
         Unitize(reflect_dir);
-        scattered = Ray(isect.coords, reflect_dir);
+        scattered = Ray(isect.coords, reflect_dir, ray_in.time);
         attenuation = albedo;
         return Dot(scattered.dir, isect.normal) > 0;
     }
@@ -72,9 +72,9 @@ public:
         double cos_theta = Min(Dot(-ray_in.dir, isect.normal), 1.0);
         if (!Refract(-ray_in.dir, transmit_dir, isect.normal, eta) ||
             RandomFloat() < Fresnel(cos_theta, eta)) 
-            scattered = Ray(isect.coords, Reflect(-ray_in.dir, isect.normal));
+            scattered = Ray(isect.coords, Reflect(-ray_in.dir, isect.normal), ray_in.time);
         else
-            scattered = Ray(isect.coords, transmit_dir);
+            scattered = Ray(isect.coords, transmit_dir, ray_in.time);
         return true;
     }
 

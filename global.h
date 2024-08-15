@@ -64,12 +64,13 @@ inline void ProgressBar(double progress) {
     std::clog << "] " << fixed << setprecision(1) << progress*100.0 << "%" << std::flush;
 }
 
-class Vector3;
-class Ray;
 struct Intersection;
-class Sphere;
-class Interval;
-class Material;
+class  Vector3;
+class  Ray;
+class  Sphere;
+class  Interval;
+class  Material;
+class  Bounds3;
 
 
 #endif // GLOBAL_H

@@ -1,10 +1,9 @@
 #include "global.h"
-
-#include "vector.h"
-#include "colour.h"
+#include "maths.h"
 #include "shapes.h"
 #include "ray.h"
 #include "scene.h"
+#include "bvhtree.h"
 #include "camera.h"
 #include "material.h"
 
@@ -14,32 +13,6 @@ Point3 RandomCentre(double x, double y, double z)
 int main() {
     Scene scene;
     
-    /*
-    auto material_ground = make_shared<Lambertian>(Colour(0.8, 0.8, 0.0));
-    auto material_center = make_shared<Lambertian>(Colour(0.1, 0.2, 0.5));
-    auto material_left   = make_shared<Dielectric>(1.50);
-    auto material_bubble = make_shared<Dielectric>(1.00 / 1.50);
-    auto material_right  = make_shared<Metal>(Colour(0.8, 0.6, 0.2), 1.0);
-
-    scene.AddObject(make_shared<Sphere>(Point3( 0.0, -100.5, -1.0), 100.0, material_ground));
-    scene.AddObject(make_shared<Sphere>(Point3( 0.0,    0.0, -1.2),   0.5, material_center));
-    scene.AddObject(make_shared<Sphere>(Point3(-1.0,    0.0, -1.0),   0.5, material_left));
-    scene.AddObject(make_shared<Sphere>(Point3(-1.0,    0.0, -1.0),   0.4, material_bubble));
-    scene.AddObject(make_shared<Sphere>(Point3( 1.0,    0.0, -1.0),   0.5, material_right));
-
-    Camera camera;
-    camera.aspect_ratio  = 1.0;
-    camera.image_width   = 768;
-    camera.sample_ppixel = 128;
-    camera.max_depth     = 32;
-
-    camera.verticle_fov  = 45;
-    camera.view_up       = Vector3(0,1,0);
-    camera.view_pos      = Point3(-2,2,1);
-    camera.view_des      = Point3(0,0,-1);
-    camera.defocus_angle = 10.0;
-    camera.focal_dist    = 3.4;
-    */
     auto MATground = make_shared<Lambertian>(Colour(0.5, 0.5, 0.5));
     scene.AddObject(make_shared<Sphere>(Point3(0, -1000, 0), 1000, MATground));
 
@@ -72,7 +45,8 @@ int main() {
                 // Diffuse Sphere
                 auto albedo = RandomColour() * RandomColour();
                 MATsphere = make_shared<Lambertian>(albedo);
-                scene.AddObject(make_shared<Sphere>(centre, r, MATsphere));
+                auto centre_next = centre + Vector3(0, RandomFloat(0,.5), 0);
+                scene.AddObject(make_shared<Sphere>(centre, centre_next, r, MATsphere));
             } else if (random_option < 0.9) {
                 // Metal Sphere
                 auto albedo    = RandomColour(0.5, 1.0);
@@ -97,10 +71,12 @@ int main() {
     scene.AddObject(make_shared<Sphere>(Point3(-1, 1, 0), radius_large, MATdielectric));
     scene.AddObject(make_shared<Sphere>(Point3( 4, 1, 0), radius_large, MATmetalllic));
 
+    scene = Scene(make_shared<BVHNode>(scene));
+
     Camera camera;
     camera.aspect_ratio  = 1.778;
     camera.image_width   = 1280;
-    camera.sample_ppixel = 1024;
+    camera.sample_ppixel = 512;
     // camera.max_depth  = 64;
     camera.roulette      = 0.8;
 
