@@ -5,7 +5,7 @@
 #include <algorithm>
 
 #include "global.h"
-#include "maths.h"
+#include "mathematics.h"
 #include "shapes.h"
 #include "scene.h"
 #include "bounds.h"

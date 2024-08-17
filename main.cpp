@@ -1,11 +1,12 @@
 #include "global.h"
-#include "maths.h"
+#include "mathematics.h"
 #include "shapes.h"
 #include "ray.h"
 #include "scene.h"
 #include "bvhtree.h"
 #include "camera.h"
 #include "material.h"
+#include "texture.h"
 
 Point3 RandomCentre(double x, double y, double z)
 { return Point3(x,y,z) + Point3(0.9*RandomFloat(),0,0.9*RandomFloat()); }
@@ -13,8 +14,8 @@ Point3 RandomCentre(double x, double y, double z)
 int main() {
     Scene scene;
     
-    auto MATground = make_shared<Lambertian>(Colour(0.5, 0.5, 0.5));
-    scene.AddObject(make_shared<Sphere>(Point3(0, -1000, 0), 1000, MATground));
+    auto checker_texture = make_shared<CheckerTexture>(0.32, Colour(0.2, 0.3, 0.1), Colour(0.9, 0.9, 0.9));
+    scene.AddObject(make_shared<Sphere>(Point3(0, -1000, 0), 1000, make_shared<Lambertian>(checker_texture)));
 
     auto radius_small = 0.2;
     auto radius_large = 1.0;
@@ -85,7 +86,7 @@ int main() {
     camera.view_pos      = Point3(12,2,3);
     camera.view_des      = Point3(0,0,0);
     camera.defocus_angle = 0.60;
-    camera.focal_dist    = 10.5;
+    camera.focal_dist    = 9.0;
 
     auto start = std::chrono::system_clock::now();
     camera.RenderScene(scene);

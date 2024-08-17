@@ -6,7 +6,7 @@
 
 #include "global.h"
 #include "shapes.h"
-#include "maths.h"
+#include "mathematics.h"
 #include "material.h"
 
 class Camera {

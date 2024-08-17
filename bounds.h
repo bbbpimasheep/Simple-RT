@@ -4,7 +4,7 @@
 
 #include "global.h"
 #include "ray.h"
-#include "maths.h"
+#include "mathematics.h"
 
 class Bounds3 {
 public:

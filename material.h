@@ -4,8 +4,9 @@
 
 #include "global.h"
 #include "ray.h"
-#include "maths.h"
+#include "mathematics.h"
 #include "shapes.h"
+#include "texture.h"
 
 class Material {
 public:
@@ -21,7 +22,8 @@ public:
 class Lambertian : public Material {
 public:
     // Constructor
-    Lambertian(const Colour& _albedo) : albedo(_albedo) {}
+    Lambertian(const Colour& _albedo) : texture(make_shared<SolidColour>(_albedo)) {}
+    Lambertian(shared_ptr<Texture> _texture) : texture(_texture) {}
 
     // Methods
     bool Scatter(const Ray& ray_in, const Intersection& isect, Colour& attenuation, Ray& scattered)
@@ -29,12 +31,12 @@ public:
         auto random_dir = isect.normal + RandomVec3Unit();
         Unitize(random_dir);
         scattered = Ray(isect.coords, random_dir, ray_in.time);
-        attenuation = albedo;
+        attenuation = texture->Value(isect.u, isect.v, isect.coords);
         return true;
     }
 
     // Members
-    Colour albedo;
+    shared_ptr<Texture> texture;
 };
 
 class Metal : public Material {

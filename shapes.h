@@ -5,7 +5,7 @@
 #include "global.h"
 #include "bounds.h"
 #include "ray.h"
-#include "maths.h"
+#include "mathematics.h"
 
 class Material;
 
@@ -14,6 +14,7 @@ struct Intersection {
     Vector3 normal;
     shared_ptr<Material> material;
     double time;
+    double u, v;
     bool outside; // True if ray is outside the object
 
     void SetOutward(const Ray& ray, const Vector3& outward_normal) {
