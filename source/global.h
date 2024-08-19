@@ -20,8 +20,8 @@ constexpr double EPS_UNIT = 1e-4;
 constexpr double EPS_DEUX = 1e-8;
 constexpr double EPS_QUAT = 1e-16;
 constexpr double GAMMA = 1.0 /2.2;
-constexpr double POS_INF = std::numeric_limits<double>::infinity();
-constexpr double NEG_INF = -POS_INF;
+constexpr double POS_INF =  std::numeric_limits<double>::infinity();
+constexpr double NEG_INF = -std::numeric_limits<double>::infinity();
 
 template <typename T> 
 inline std::string Str(T value) { return std::to_string(value); }
@@ -39,6 +39,14 @@ template <typename T>
 inline double Cos(T value) { return std::cos(value); }
 template <typename T>
 inline double Tan(T value) { return std::tan(value); }
+template <typename T>
+inline double Asin(T value) { return std::asin(value); }
+template <typename T>
+inline double Acos(T value) { return std::acos(value); }
+template <typename T>
+inline double Atan(T value) { return std::atan(value); }
+template <typename T>
+inline double Atan2(T value1, T value2) { return std::atan2(value1, value2); }
 template <typename T>
 inline T Min(T value1, T value2) { return std::min(value1, value2); }
 template <typename T>

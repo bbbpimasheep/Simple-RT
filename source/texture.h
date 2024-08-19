@@ -4,6 +4,8 @@
 
 #include "global.h"
 #include "mathematics.h"
+#include "image.h"
+#include "colour.h"
 
 class Texture {
 public:
@@ -50,6 +52,33 @@ private:
     double scale_inv;
     shared_ptr<Texture> even_texture;
     shared_ptr<Texture> odd_texture;
+};
+
+class ImageTexture : public Texture {
+public:
+    // Constructor
+    ImageTexture(const char* filename) : image(filename) {}
+
+    // Methods
+    Colour Value(double u, double v, const Point3& p) const override {
+        // If we have no texture data, then return solid cyan as a debugging aid.
+        if (image.Height() <= 0) return Colour(0,1,1);
+        // Clamp input texture coordinates to [0,1] x [1,0];
+        u = Interval(0,1).Clamp(u);
+        v = 1.0 - Interval(0,1).Clamp(v);
+        auto i = static_cast<int>(u * (image.Width()  - 1));
+        auto j = static_cast<int>(v * (image.Height() - 1));
+        auto colours = image.PixelData(i, j);
+
+        auto scale_inv = 1.0 / 255.0;
+        return Colour(colours[0] * scale_inv, 
+                      colours[1] * scale_inv, 
+                      colours[2] * scale_inv);
+    }
+
+private:
+    // Members
+    Image image;
 };
 
 

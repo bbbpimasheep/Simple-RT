@@ -76,6 +76,8 @@ public:
         isect.coords = ray(t_hit);
         isect.time = t_hit;
         isect.material = material;
+        CountUV(outward_normal, isect.u, isect.v);
+        
         return true;
     }
     Bounds3 BBox() const override {
@@ -93,6 +95,12 @@ private:
 
     // Methods
     Point3 GetCentre(double time) const { return centre0 + time * shift; }
+    static void CountUV(const Point3& p, double& u, double& v) {
+        auto theta = Acos(-p.y);
+        auto phi   = Atan2(-p.z, p.x) + M_PI;
+        u = phi / (2 * M_PI);
+        v = theta / M_PI;
+    }
 };
 
 // Inline Functions
