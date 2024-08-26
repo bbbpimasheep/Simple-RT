@@ -13,7 +13,7 @@ public:
     Ray(const Point3& o_, const Vector3& d_) : org(o_), dir(d_), time(0.0) {}
 
     // Methods
-    Vector3 operator()(float t) const { return org + dir * t; }
+    Point3 operator()(float t) const { return org + dir * t; }
 
     // Members
     Point3 dir;

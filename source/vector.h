@@ -87,6 +87,8 @@ inline bool    Refract(const Vector3& wi, Vector3& wt, const Vector3& n, double 
     wt = -wi/eta + (cos_i/eta - cos_r) * n;
     return true;
 }
+inline Eigen::Vector4d Homogeneous(const Vector3& v, double w=1) 
+{ return Eigen::Vector4d(v.x, v.y, v.z, w); }
 
 // Debugging
 inline std::string Str(const Vector3 v) 

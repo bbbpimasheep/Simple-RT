@@ -9,6 +9,9 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_CXX_FLAGS "${CAMKE_CXX_FLAGS} -O3 -fopenmp")
 
+# Specify the include directories
+include_directories(/usr/local/include ./include)
+
 # Specify the source file(s)
 add_executable(raytracer main.cpp)
 

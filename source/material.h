@@ -16,6 +16,8 @@ public:
     // Methods
     virtual bool Scatter(const Ray& ray_in, const Intersection& isect, Colour& attenuation, Ray& scattered) 
     const { return false; }
+    virtual Colour Emission(double u, double v, const Point3& p) 
+    const { return Colour(0.0); }
 };
 
 
@@ -97,5 +99,22 @@ private:
     // Members
     double refractive_index;
 };
+
+class Light : public Material {
+public:
+    // Constructor
+    Light(shared_ptr<Texture> _texture) : texture(_texture) {}
+    Light(const Colour& _colour) : texture(make_shared<SolidColour>(_colour)) {}
+
+    // Methods
+    Colour Emission(double u, double v, const Point3& p) const override {
+        return texture->Value(u, v, p);
+    }
+
+private:
+    // Members
+    shared_ptr<Texture> texture;
+};
+
 
 #endif // MATERIAL_H

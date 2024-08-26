@@ -49,10 +49,11 @@ public:
     // Members
     int image_width     = 1024;
     int sample_ppixel   = 16;
-    int max_depth       = 10;
+    int max_depth       = 32;
     double roulette     = 0.8;
     double aspect_ratio = 1.0;
     double verticle_fov = 90.0;
+    Colour background   = Colour(0.0);
 
     Vector3 view_up = Vector3(0, 1, 0);
     Point3 view_des = Point3(0, 0,-1);
@@ -96,18 +97,16 @@ private:
     }
     Colour RayColour(const Ray& ray, const Shapes& world, int depth) {
         Intersection isect;
-        if (world.Intersect(ray, Interval(EPS_UNIT, POS_INF), isect)) {
-            // std::clog << "Tracing Ray: " << Str(ray) << "\n";
-            Colour attenuation;
-            Ray scattered;
-            if (RandomFloat() <= roulette && 
-                isect.material->Scatter(ray, isect, attenuation, scattered))
-                return attenuation * RayColour(scattered, world, depth-1) / roulette;
-            else 
-                return Colour(0, 0, 0);
-        }
-        double a = (ray.dir.y+1.0) * 0.5;
-        return Lerp(Colour(1.0, 1.0, 1.0), Colour(0.5, 0.7, 1.0), a);
+        if (RandomFloat() > roulette || 
+            !world.Intersect(ray, Interval(EPS_DEUX, POS_INF), isect))
+            return background;
+        Ray scattered;
+        Colour attenuation;
+        auto colour_emission  = isect.material->Emission(isect.u, isect.v, isect.coords);
+        if (!isect.material->Scatter(ray, isect, attenuation, scattered))
+            return colour_emission / roulette;
+        auto colour_scattered = attenuation * RayColour(scattered, world, depth-1);
+        return (colour_emission + colour_scattered) / roulette;
     }
     Ray CastRay(int x, int y, int s) {
         auto pixel_centre = pixel00_centre + pixel_du*x + pixel_dv*y;

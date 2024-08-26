@@ -10,6 +10,7 @@
 #include <memory>
 #include <iomanip>
 #include <chrono>
+#include <eigen3/Eigen/Dense>
 
 using std::shared_ptr;
 using std::make_shared;
@@ -71,14 +72,6 @@ inline void ProgressBar(double progress) {
     }
     std::clog << "] " << fixed << setprecision(1) << progress*100.0 << "%" << std::flush;
 }
-
-struct Intersection;
-class  Vector3;
-class  Ray;
-class  Sphere;
-class  Interval;
-class  Material;
-class  Bounds3;
 
 
 #endif // GLOBAL_H

@@ -35,7 +35,7 @@ public:
     Bounds3 BBox() const override { return bounds; }
 
     // Members
-    std::vector<shared_ptr<Shapes>> objects;
+    vector<shared_ptr<Shapes>> objects;
 
 private:
     Bounds3 bounds;

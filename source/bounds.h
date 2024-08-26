@@ -10,12 +10,21 @@ class Bounds3 {
 public:
     // Constructors
     Bounds3() = default;
-    Bounds3(const Interval& _x, const Interval& _y, const Interval& _z) : x(_x), y(_y), z(_z) {}
+    Bounds3(const Interval& _x, const Interval& _y, const Interval& _z) : x(_x), y(_y), z(_z) {
+        // Adjust the Bounds so that no side is narrower than some delta, padding if necessary.
+        if (x.size < EPS_UNIT) x = x.Expand(EPS_UNIT);
+        if (y.size < EPS_UNIT) y = y.Expand(EPS_UNIT);
+        if (z.size < EPS_UNIT) z = z.Expand(EPS_UNIT);
+    }
     Bounds3(const Point3& a, const Point3& b) {
         x = a.x <= b.x? Interval(a.x, b.x) : Interval(b.x, a.x);
         y = a.y <= b.y? Interval(a.y, b.y) : Interval(b.y, a.y);
         z = a.z <= b.z? Interval(a.z, b.z) : Interval(b.z, a.z);
+        if (x.size < EPS_UNIT) x = x.Expand(EPS_UNIT);
+        if (y.size < EPS_UNIT) y = y.Expand(EPS_UNIT);
+        if (z.size < EPS_UNIT) z = z.Expand(EPS_UNIT);
     }
+
     // Methods
     Interval operator[](int i) const { return (i == 0) ? x : (i == 1) ? y : z; }
     Interval &operator[](int i) { return (i == 0) ? x : (i == 1) ? y : z; }

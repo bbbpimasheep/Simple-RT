@@ -5,6 +5,7 @@
 #include "scene.h"
 #include "bvhtree.h"
 #include "camera.h"
+#include "objects.h"
 #include "material.h"
 #include "texture.h"
 
@@ -78,7 +79,7 @@ void BouncingBalls(uint32_t& minutes, uint32_t& seconds) {
     camera.aspect_ratio  = 1.778;
     camera.image_width   = 512;
     camera.sample_ppixel = 64;
-    // camera.max_depth  = 64;
+    camera.background    = Colour(0.7, 0.8, 1.0);
     camera.roulette      = 0.8;
 
     camera.verticle_fov  = 20;
@@ -107,6 +108,7 @@ void CheckboardBalls(uint32_t& minutes, uint32_t& seconds) {
     camera.aspect_ratio  = 1.778;
     camera.image_width   = 512;
     camera.sample_ppixel = 64;
+    camera.background    = Colour(0.7, 0.8, 1.0);
     camera.roulette      = 0.8;
 
     camera.verticle_fov  = 20;
@@ -130,6 +132,7 @@ void PlanetEarth(uint32_t& minutes, uint32_t& seconds) {
     camera.aspect_ratio  = 1.778;
     camera.image_width   = 1280;
     camera.sample_ppixel = 512;
+    camera.background    = Colour(0.7, 0.8, 1.0);
     camera.roulette      = 0.8;
 
     camera.verticle_fov  = 20;
@@ -145,12 +148,123 @@ void PlanetEarth(uint32_t& minutes, uint32_t& seconds) {
     seconds = std::chrono::duration_cast<std::chrono::seconds>(stop - start).count() - 60*minutes;
 }
 
+void TestSquares(uint32_t& minutes, uint32_t& seconds) {
+    Scene scene;
+
+    // Materials
+    auto left_aka    = make_shared<Lambertian>(Colour(1.0, 0.2, 0.2));
+    auto back_midori = make_shared<Lambertian>(Colour(0.2, 1.0, 0.2));
+    auto right_ai    = make_shared<Lambertian>(Colour(0.2, 0.2, 1.0));
+    auto upper_kiiro = make_shared<Lambertian>(Colour(1.0, 0.5, 0.0));
+    auto lower_ao    = make_shared<Lambertian>(Colour(0.2, 0.8, 0.8));
+
+    // Quadrilaterals
+    scene.AddObject(make_shared<Quad>(Point3(-3,-2, 5), Vector3(0, 0,-4), Vector3(0, 4, 0), left_aka));
+    scene.AddObject(make_shared<Quad>(Point3(-2,-2, 0), Vector3(4, 0, 0), Vector3(0, 4, 0), back_midori));
+    scene.AddObject(make_shared<Quad>(Point3( 3,-2, 1), Vector3(0, 0, 4), Vector3(0, 4, 0), right_ai));
+    scene.AddObject(make_shared<Quad>(Point3(-2, 3, 1), Vector3(4, 0, 0), Vector3(0, 0, 4), upper_kiiro));
+    scene.AddObject(make_shared<Quad>(Point3(-2,-3, 5), Vector3(4, 0, 0), Vector3(0, 0,-4), lower_ao));
+
+    Camera camera;
+    camera.aspect_ratio  = 1.0;
+    camera.image_width   = 512;
+    camera.sample_ppixel = 64;
+    camera.background    = Colour(0.7, 0.8, 1.0);
+    camera.roulette      = 0.8;
+
+    camera.verticle_fov  = 80;
+    camera.view_up       = Vector3(0,1,0);
+    camera.view_pos      = Point3(0,0,9);
+    camera.view_des      = Point3(0,0,0);
+    camera.defocus_angle = 0.0;
+
+    auto start = std::chrono::system_clock::now();
+    camera.RenderScene(scene);
+    auto stop = std::chrono::system_clock::now();
+    minutes = std::chrono::duration_cast<std::chrono::minutes>(stop - start).count();
+    seconds = std::chrono::duration_cast<std::chrono::seconds>(stop - start).count() - 60*minutes;
+}
+
+void SingleLight(uint32_t& minutes, uint32_t& seconds) {
+    Scene scene;
+    scene.AddObject(make_shared<Sphere>(Point3(0,-1000,0), 1000, make_shared<Lambertian>(Colour(1.0, 0.2, 0.2))));
+    scene.AddObject(make_shared<Sphere>(Point3(0,2,0), 2, make_shared<Lambertian>(Colour(1.0, 0.2, 0.2))));
+
+    auto material_light = make_shared<Light>(Colour(8.0));
+    scene.AddObject(make_shared<Quad>(Point3(3,1,-2), Vector3(2,0,0), Vector3(0,2,0), material_light));
+
+    Camera camera;
+    camera.aspect_ratio  = 1.778;
+    camera.image_width   = 512;
+    camera.sample_ppixel = 1024;
+    camera.background    = Colour(0.0);
+    camera.roulette      = 0.8;
+
+    camera.verticle_fov  = 20;
+    camera.view_up       = Vector3(0,1,0);
+    camera.view_pos      = Point3(26,3,6);
+    camera.view_des      = Point3(0,2,0);
+    camera.defocus_angle = 0.0;
+
+    auto start = std::chrono::system_clock::now();
+    camera.RenderScene(scene);
+    auto stop = std::chrono::system_clock::now();
+    minutes = std::chrono::duration_cast<std::chrono::minutes>(stop - start).count();
+    seconds = std::chrono::duration_cast<std::chrono::seconds>(stop - start).count() - 60*minutes;
+}
+
+void CornellBox(uint32_t& minutes, uint32_t& seconds) {
+    Scene scene;
+
+    auto red   = make_shared<Lambertian>(Colour(.65, .05, .05));
+    auto white = make_shared<Lambertian>(Colour(.73, .71, .68));
+    auto green = make_shared<Lambertian>(Colour(.12, .45, .15));
+    auto light = make_shared<Light>(Colour(30.0));
+
+    scene.AddObject(make_shared<Quad>(Point3( 555,   0,   0), Vector3(   0, 555,   0), Vector3(   0,   0, 555), green));
+    scene.AddObject(make_shared<Quad>(Point3(   0,   0,   0), Vector3(   0, 555,   0), Vector3(   0,   0, 555), red));
+    scene.AddObject(make_shared<Quad>(Point3( 343, 554, 332), Vector3(-130,   0,   0), Vector3(   0,   0,-105), light));
+    scene.AddObject(make_shared<Quad>(Point3(   0,   0,   0), Vector3( 555,   0,   0), Vector3(   0,   0, 555), white));
+    scene.AddObject(make_shared<Quad>(Point3( 555, 555, 555), Vector3(-555,   0,   0), Vector3(   0,   0,-555), white));
+    scene.AddObject(make_shared<Quad>(Point3(   0,   0, 555), Vector3( 555,   0,   0), Vector3(   0, 555,   0), white));
+
+    auto rotate1 = RotateY(15.0);
+    auto trans1  = Translate(Vector3(265, 0, 295));
+    scene.AddObject(CreateBox(Point3(0, 0, 0), Point3(165, 330, 165), white, trans1*rotate1));
+    auto rotate2 = RotateY(-18.0);
+    auto trans2  = Translate(Vector3(130, 0, 65));
+    scene.AddObject(CreateBox(Point3(0, 0, 0), Point3(165, 165, 165), white, trans2*rotate2));
+
+    Camera camera;
+    camera.aspect_ratio  = 1.0;
+    camera.image_width   = 800;
+    camera.sample_ppixel = 10000;
+    camera.background    = Colour(0.0);
+    camera.roulette      = 0.8;
+
+    camera.verticle_fov  = 40;
+    camera.view_up       = Vector3(0,1,0);
+    camera.view_pos      = Point3(278,278,-800);
+    camera.view_des      = Point3(278,278,0);
+    camera.defocus_angle = 0.0;
+
+    auto start = std::chrono::system_clock::now();
+    camera.RenderScene(scene);
+    auto stop = std::chrono::system_clock::now();
+    minutes = std::chrono::duration_cast<std::chrono::minutes>(stop - start).count();
+    seconds = std::chrono::duration_cast<std::chrono::seconds>(stop - start).count() - 60*minutes;
+}
+
 int main() {
     uint32_t minutes=0, seconds=0;
-    switch (3) {
+    switch (7) {
         case 1: BouncingBalls(minutes, seconds);    break;
         case 2: CheckboardBalls(minutes, seconds);  break;
         case 3: PlanetEarth(minutes, seconds);      break;
+        case 5: TestSquares(minutes, seconds);      break;
+        case 6: SingleLight(minutes, seconds);      break;
+        case 7: CornellBox(minutes, seconds);       break;
+        default: std::clog << "Invalid choice.\n";  break;
     }
     std::clog << "Render complete: \n";
     std::clog << "Time taken: " << minutes << " Minutes and " << seconds << " Seconds.\n";
