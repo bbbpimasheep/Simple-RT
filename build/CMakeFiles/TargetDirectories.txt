@@ -1,0 +1,3 @@
+/Users/shizuku/Documents/Coding Sōko/raytracer/build/CMakeFiles/raytracer.dir
+/Users/shizuku/Documents/Coding Sōko/raytracer/build/CMakeFiles/edit_cache.dir
+/Users/shizuku/Documents/Coding Sōko/raytracer/build/CMakeFiles/rebuild_cache.dir
