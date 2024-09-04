@@ -148,6 +148,33 @@ void PlanetEarth(uint32_t& minutes, uint32_t& seconds) {
     seconds = std::chrono::duration_cast<std::chrono::seconds>(stop - start).count() - 60*minutes;
 }
 
+void PerlinSpheres(uint32_t& minutes, uint32_t& seconds) {
+    Scene scene;
+
+    auto perlin_texture = make_shared<NoiseTexture>(4);
+    scene.AddObject(make_shared<Sphere>(Point3(0, -1000, 0), 1000, make_shared<Lambertian>(perlin_texture)));
+    scene.AddObject(make_shared<Sphere>(Point3(0,  2,    0), 2, make_shared<Lambertian>(perlin_texture)));
+
+    Camera camera;
+    camera.aspect_ratio  = 1.778;
+    camera.image_width   = 512;
+    camera.sample_ppixel = 256;
+    camera.background    = Colour(0.7, 0.8, 1.0);
+    camera.roulette      = 0.8;
+
+    camera.verticle_fov  = 20;
+    camera.view_up       = Vector3(0,1,0);
+    camera.view_pos      = Point3(13,2,3);
+    camera.view_des      = Point3(0,0,0);
+    camera.defocus_angle = 0.0;
+
+    auto start = std::chrono::system_clock::now();
+    camera.RenderScene(Scene(scene));
+    auto stop = std::chrono::system_clock::now();
+    minutes = std::chrono::duration_cast<std::chrono::minutes>(stop - start).count();
+    seconds = std::chrono::duration_cast<std::chrono::seconds>(stop - start).count() - 60*minutes;
+}
+
 void TestSquares(uint32_t& minutes, uint32_t& seconds) {
     Scene scene;
 
@@ -219,7 +246,9 @@ void CornellBox(uint32_t& minutes, uint32_t& seconds) {
     auto red   = make_shared<Lambertian>(Colour(.65, .05, .05));
     auto white = make_shared<Lambertian>(Colour(.73, .71, .68));
     auto green = make_shared<Lambertian>(Colour(.12, .45, .15));
-    auto light = make_shared<Light>(Colour(30.0));
+    auto light = make_shared<Light>(Colour(1.0, .97, .86) * 60);
+    auto metal = make_shared<Metal>(Colour(0.8, 0.6, 0.5), 0.0);
+    auto glass = make_shared<Dielectric>(1.5);
 
     scene.AddObject(make_shared<Quad>(Point3( 555,   0,   0), Vector3(   0, 555,   0), Vector3(   0,   0, 555), green));
     scene.AddObject(make_shared<Quad>(Point3(   0,   0,   0), Vector3(   0, 555,   0), Vector3(   0,   0, 555), red));
@@ -238,7 +267,7 @@ void CornellBox(uint32_t& minutes, uint32_t& seconds) {
     Camera camera;
     camera.aspect_ratio  = 1.0;
     camera.image_width   = 800;
-    camera.sample_ppixel = 10000;
+    camera.sample_ppixel = 1600;
     camera.background    = Colour(0.0);
     camera.roulette      = 0.8;
 
@@ -261,6 +290,7 @@ int main() {
         case 1: BouncingBalls(minutes, seconds);    break;
         case 2: CheckboardBalls(minutes, seconds);  break;
         case 3: PlanetEarth(minutes, seconds);      break;
+        case 4: PerlinSpheres(minutes, seconds);    break;
         case 5: TestSquares(minutes, seconds);      break;
         case 6: SingleLight(minutes, seconds);      break;
         case 7: CornellBox(minutes, seconds);       break;

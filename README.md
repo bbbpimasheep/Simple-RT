@@ -16,10 +16,10 @@ Then run the `./raytracer` in the `build` directory. You can use `> image.ppm` t
 Of course, you can replace `image.ppm` with any other filename you like, and the result of defualt settings has already been saved in the `image.png` file.
 
 #### Bouncing Spheres
-<img src="scene_one.png">
+<img src="results/scene_one.png">
 
 #### Planet Earth
-<img src="scene_three.png">
+<img src="results/scene_three.png">
 
 ## References
 
