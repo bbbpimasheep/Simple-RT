@@ -8,14 +8,16 @@
 #include "mathematics.h"
 
 class Material;
+class Shapes;
 
 struct Intersection {
     Point3 coords;
     Vector3 normal;
-    shared_ptr<Material> material;
     double time;
     double u, v;
     bool outside; // True if ray is outside the object
+    shared_ptr<Material> material;
+    shared_ptr<const Shapes> object;
 
     void SetOutward(const Ray& ray, const Vector3& outward_normal) {
         outside = Dot(ray.dir, outward_normal) < 0;
@@ -37,7 +39,7 @@ public:
     virtual void Sample(Intersection& isect, double& pdf) const {};
 };
 
-class Sphere : public Shapes {
+class Sphere : public Shapes, public std::enable_shared_from_this<Sphere> {
 public:
     // Constructor & Destructor
     // Staionary Sphere
@@ -81,6 +83,7 @@ public:
         isect.coords = ray(t_hit);
         isect.time = t_hit;
         isect.material = material;
+        isect.object = shared_from_this();
         CountUV(outward_normal, isect.u, isect.v);
         
         return true;
@@ -116,7 +119,7 @@ private:
 };
 
 
-class Quad: public Shapes {
+class Quad: public Shapes, public std::enable_shared_from_this<Quad> {
 public:
     // Constructors
     Quad(const Point3& _pin, const Vector3& _u, const Vector3& _v, shared_ptr<Material> _material) 
@@ -168,6 +171,7 @@ public:
         isect.coords = ray(t);
         isect.time = t;
         isect.material = material;
+        isect.object = shared_from_this();
         isect.SetOutward(ray, normal);
         return true;
     }

@@ -104,85 +104,66 @@ private:
         
         // Emission
         Colour emission, attenuation;
-        Ray ray_scattered;  // Scattered Ray
-        if (!isect.material->Scatter(ray, isect, attenuation, ray_scattered)) {
+        Ray scattered;  // Scattered Ray
+        if (!isect.material->Scatter(ray, isect, attenuation, scattered)) {
             emission = isect.material->Emission(isect.u, isect.v, isect.coords);
             return emission;
         }
 
-        Colour radiance(emission);
-        Colour L_dir, L_ind;
+        Colour radiance(emission), incidence(0);
+        double PDF_illu, PDF_brdf, PDF_mult;
 
-        auto wi = ray_scattered.dir;
+        auto wi = scattered.dir;
         auto wo = -ray.dir;
         auto No = isect.normal;
+        auto BRDF = isect.material->BRDFunc(wi, wo, No, attenuation);
+        
+        if (RandomFloat() <= roulette) {
+            // Light Sampling
+            Intersection samp_isect;
+            world.SampleLights(samp_isect, PDF_illu);
+            auto Li_dis = samp_isect.coords - isect.coords;
+            auto Li_dir = Normalize(Li_dis);
+            auto Li_ray = Ray(isect.coords, Li_dir);
 
-        auto PDF_illu = 0.0;
-        auto PDF_brdf = 0.0;
+            auto r = RandomFloat(), prob = 0.5;
+            if (r <= prob) {
+                // Visibility Test
+                if ((world.Intersect(Li_ray, Interval(EPS_DEUX, POS_INF), samp_isect)) &&
+                    (Length(Li_dis) - Length(isect.coords + No*EPS_DEUX - samp_isect.coords) <= EPS_UNIT)) {
+                    // Direct Illumination
+                    auto Li = samp_isect.material->Emission(samp_isect.u, samp_isect.v, samp_isect.coords);
+                    auto wi = Li_dir;
+                    auto Ns = samp_isect.normal;
+                    // Multiple Importance Sampling
+                    PDF_brdf = isect.material->PDFunc(wi, wo, No);
+                    PDF_brdf = PDF_brdf * Abs(Dot(wi, No)*Dot(-wi, Ns)) / Length2(Li_dis);    // BRDF to Light
+                    PDF_mult = PDF_brdf + PDF_illu;
 
-        // Light Sampling
-        Intersection samp_isect;
-        world.SampleLights(samp_isect, PDF_illu);
-        auto Li_dis = samp_isect.coords - isect.coords;
-        auto Li_dir = Normalize(Li_dis);
-        auto Li_ray = Ray(isect.coords + No*EPS_UNIT, Li_dir);
-        // Visibility Test
-        Intersection test_isect;
-        if ((world.Intersect(Li_ray, Interval(EPS_DEUX, POS_INF), samp_isect)) &&
-            (Length(Li_dis) - Length(samp_isect.coords - isect.coords) <= EPS_UNIT)) {
-            // Direct Illumination
-            auto Li = samp_isect.material->Emission(samp_isect.u, samp_isect.v, samp_isect.coords);
-            auto wi = Li_dir;
-            auto Ns = samp_isect.normal;
-            auto BRDF = isect.material->BRDFunc(wi, wo, No, attenuation);
+                    incidence = BRDF * Li * Abs(Dot(wi, No)*Dot(-wi, Ns)) / Length2(Li_dis) / (PDF_mult * prob);
+                } 
+            } else {
+                // Indirect Illumination
+                if ((world.Intersect(scattered, Interval(EPS_DEUX, POS_INF), samp_isect)) &&
+                    (Dot(wi, No) >= 0)) {
+                    PDF_brdf = isect.material->PDFunc(wi, wo, No);
+                    // Multiple Importance Sampling
+                    Intersection test_isect;
+                    if (samp_isect.material->Shines())
+                        samp_isect.object->Sample(test_isect, PDF_illu);
+                    else 
+                        PDF_illu = 0.0;
+                    PDF_illu = PDF_illu * Length2(Li_dis) / Abs(Dot(wi, No)*Dot(-wi, samp_isect.normal)); // Light to BRDF
+                    PDF_mult = PDF_brdf + PDF_illu;
 
-            L_dir = BRDF * Li * Abs(Dot(wi, No)*Dot(-wi, Ns)) / Length2(Li_dis) / PDF_illu;
-        } 
-
-        // Indirect Illumination
-        if (RandomFloat() <= roulette && Dot(ray_scattered.dir, isect.normal) >= 0) {
-            // Intersection last_isect;
-            if (world.Intersect(ray_scattered, Interval(EPS_DEUX, POS_INF), samp_isect) &&
-                !samp_isect.material->Shines()) {
-                auto BRDF = isect.material->BRDFunc(wi, wo, No, attenuation);
-                PDF_brdf = isect.material->PDFunc(wi, wo, No);
-                
-                L_ind = PDF_brdf > EPS_DEUX
-                      ? BRDF * RayColour(ray_scattered, world, depth-1) * Dot(wi, No) / (PDF_brdf * roulette)
-                      : Colour(0);
+                    incidence = PDF_mult > EPS_DEUX ? 
+                                BRDF * RayColour(scattered, world, depth-1) * Dot(wi, No) / (PDF_mult * (1-prob)) : 
+                                Colour(0);
+                }
             }
         }
 
-        radiance += L_dir + L_ind;
-        /*
-        // Visibility Test
-        Intersection light_isect;
-        if ((world.Intersect(sample_ray, Interval(EPS_DEUX, POS_INF), light_isect)) &&
-            (Length(sample_vec) - Length(light_isect.coords - isect.coords) <= EPS_UNIT)) {
-            // Direct Illumination
-            auto light_emission = light_isect.material->Emission(light_isect.u, light_isect.v, light_isect.coords);
-            auto wi = sample_dir, wo = -ray.dir;
-            auto isect_n = isect.normal, light_n = light_isect.normal;
-            auto f_reflect = isect.material->BRDFunc(wi, wo, isect.normal, attenuation);
-            radiance += f_reflect * light_emission * Abs(Dot(wi, isect_n)*Dot(-wi, light_n)) / 
-                        (sample_pdf * Length2(sample_vec));
-        }
-
-        // Indirect Illumination       
-        if (RandomFloat() <= roulette && Dot(ray_scattered.dir, isect.normal) >= 0) {
-            Intersection next_isect;
-            if (world.Intersect(ray_scattered, Interval(EPS_DEUX, POS_INF), next_isect)
-                &&!next_isect.material->Shines()) { 
-                auto wi = ray_scattered.dir, wo = -ray.dir;
-                auto f_reflect = isect.material->BRDFunc(wi, wo, isect.normal, attenuation);
-                auto f_pdf = isect.material->PDFunc(wi, wo, isect.normal);
-                radiance += f_pdf > EPS_UNIT
-                          ? f_reflect * RayColour(ray_scattered, world, depth-1) * Dot(wi, isect.normal) 
-                            / (f_pdf * roulette)
-                          : Colour(0);
-            }
-        }
-        */
+        radiance += incidence / roulette;
         return Vector3::Min(Vector3::Max(radiance, Colour(0)), Colour(5));
     }
     Ray CastRay(int x, int y, int s) {
