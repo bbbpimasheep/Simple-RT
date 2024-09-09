@@ -26,9 +26,7 @@ public:
                 auto pixel_colour = Colour(0, 0, 0);
                 for (int s = 0; s < sample_ppixel; s += 1) {
                     Ray ray = CastRay(x, y, s);
-                    // std::clog << "Rendering pixel (" << x << ", " << y << ") sample " << s << " \n";
                     pixel_colour += RayColour(ray, scene, max_depth);
-                    // std::clog << "Pixel Colour: " << Str(pixel_colour) << "\n";
                 }
                 frame_buffer[y * image_width + x] = pixel_colour * spp_inv;
             }
@@ -109,7 +107,6 @@ private:
             emission = isect.material->Emission(isect.u, isect.v, isect.coords);
             return emission;
         }
-
         Colour radiance(emission), incidence(0);
         double PDF_illu, PDF_brdf, PDF_mult;
 
@@ -127,24 +124,25 @@ private:
             auto Li_ray = Ray(isect.coords, Li_dir);
 
             auto r = RandomFloat(), prob = 0.5;
-            if (r <= prob) {
+            if ((r <= prob) && (!isect.material->Glossy())) {
                 // Visibility Test
-                if ((world.Intersect(Li_ray, Interval(EPS_DEUX, POS_INF), samp_isect)) &&
+                if ((world.Intersect(Li_ray, Interval(EPS_QUAT, POS_INF), samp_isect)) &&
                     (Length(Li_dis) - Length(isect.coords + No*EPS_DEUX - samp_isect.coords) <= EPS_UNIT)) {
                     // Direct Illumination
                     auto Li = samp_isect.material->Emission(samp_isect.u, samp_isect.v, samp_isect.coords);
                     auto wi = Li_dir;
-                    auto Ns = samp_isect.normal;
                     // Multiple Importance Sampling
                     PDF_brdf = isect.material->PDFunc(wi, wo, No);
-                    PDF_brdf = PDF_brdf * Abs(Dot(wi, No)*Dot(-wi, Ns)) / Length2(Li_dis);    // BRDF to Light
+                    PDF_illu = PDF_illu * Length2(Li_dis) / Abs(Dot(-wi, samp_isect.normal)); // Light to Solid Angle
                     PDF_mult = PDF_brdf + PDF_illu;
 
-                    incidence = BRDF * Li * Abs(Dot(wi, No)*Dot(-wi, Ns)) / Length2(Li_dis) / (PDF_mult * prob);
+                    incidence = PDF_mult > EPS_DEUX ? 
+                                BRDF * Li * Dot(wi, No) / (PDF_mult * prob) : 
+                                Colour(0);
                 } 
             } else {
                 // Indirect Illumination
-                if ((world.Intersect(scattered, Interval(EPS_DEUX, POS_INF), samp_isect)) &&
+                if ((world.Intersect(scattered, Interval(EPS_QUAT, POS_INF), samp_isect)) &&
                     (Dot(wi, No) >= 0)) {
                     PDF_brdf = isect.material->PDFunc(wi, wo, No);
                     // Multiple Importance Sampling
@@ -153,18 +151,19 @@ private:
                         samp_isect.object->Sample(test_isect, PDF_illu);
                     else 
                         PDF_illu = 0.0;
-                    PDF_illu = PDF_illu * Length2(Li_dis) / Abs(Dot(wi, No)*Dot(-wi, samp_isect.normal)); // Light to BRDF
+                    PDF_illu = PDF_illu * Length2(Li_dis) / Abs(Dot(-wi, samp_isect.normal)); // Light to Solid Angle
                     PDF_mult = PDF_brdf + PDF_illu;
 
                     incidence = PDF_mult > EPS_DEUX ? 
                                 BRDF * RayColour(scattered, world, depth-1) * Dot(wi, No) / (PDF_mult * (1-prob)) : 
                                 Colour(0);
+                    if (isect.material->Glossy()) incidence *= (PDF_mult / PDF_brdf * (1-prob));
                 }
             }
         }
 
         radiance += incidence / roulette;
-        return Vector3::Min(Vector3::Max(radiance, Colour(0)), Colour(5));
+        return Vector3::Min(Vector3::Max(radiance, Colour(0)), Colour(10));
     }
     Ray CastRay(int x, int y, int s) {
         auto pixel_centre = pixel00_centre + pixel_du*x + pixel_dv*y;

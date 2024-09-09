@@ -54,9 +54,9 @@ inline double Dot(const Vector3 v1, const Vector3 v2) { return v1.x*v2.x + v1.y*
 inline Vector3 operator*(double s, const Vector3 v) { return v*s; }  // Scalar Front Multiplication
 inline Vector3 operator*(const Vector3& v, const Vector3& u) { return Vector3(v.x*u.x, v.y*u.y, v.z*u.z); }
 inline Vector3 Normalize(const Vector3 v) // Prevent Division by Zero 
-{ Vector3 u = v; if (IsZero(u)) u /= EPS_DEUX; return u / Length(u); }
+{ Vector3 u = v; if (IsZero(u)) u *= 1.0e12; return u / Length(u); }
 inline void    Unitize(Vector3& v) { v = Normalize(v); }
-inline Vector3 Lerp(const Vector3& v1, const Vector3& v2, double t) { return (1-t)*v1 + t*v2; }
+// inline Vector3 Lerp(const Vector3& v1, const Vector3& v2, double t) { return (1-t)*v1 + t*v2; }
 inline Vector3 RandomVec3() { return Vector3(RandomFloat(), RandomFloat(), RandomFloat()); }
 inline Vector3 RandomVec3(double min, double max) { 
     return Vector3(RandomFloat(min, max), 
@@ -67,6 +67,12 @@ inline Vector3 RandomVec3Unit() {
     auto θ = M_PI   * RandomFloat();
     auto φ = 2*M_PI * RandomFloat();
     return Vector3(Sin(φ)*Cos(θ), Sin(φ)*Sin(θ), Cos(φ));
+}
+inline Vector3 RandomVec3DiskPolar() {
+    auto u = RandomFloat(), v = RandomFloat();
+    auto r = Sqrt(u);
+    auto θ = 2*M_PI * v;
+    return Vector3(r*Cos(θ), r*Sin(θ), 0);
 }
 inline Vector3 RandomVec3Disk() {
     auto u = Vector3(RandomFloat(-1,1), RandomFloat(-1,1), 0);
@@ -86,9 +92,27 @@ inline Vector3 Cross(const Vector3 v1, const Vector3 v2) {
                    v1.z*v2.x - v1.x*v2.z, 
                    v1.x*v2.y - v1.y*v2.x); 
 }
+inline Eigen::Vector4d Homogeneous(const Vector3& v, double w=1) 
+{ return Eigen::Vector4d(v.x, v.y, v.z, w); }
+
+// Direction
+inline double CosΘ (Vector3& _v) { return _v.z / Length(_v); }
+inline double Cos2Θ(Vector3& _v) { return Sqr(_v.z) / Length2(_v); }
+inline double SinΘ (Vector3& _v) { return Sqrt(Max(0.0, 1 - Sqr(_v.z))); }
+inline double Sin2Θ(Vector3& _v) { return Max(0.0, 1 - Sqr(_v.z)); }
+inline double TanΘ (Vector3& _v) { return SinΘ(_v) / CosΘ(_v); }
+inline double Tan2Θ(Vector3& _v) { return Sin2Θ(_v) / Cos2Θ(_v); }
+inline double Cosφ (Vector3& _v) { 
+    auto sin_theta = SinΘ(_v);
+    return sin_theta == 0 ? 1 : Min(1.0, Max(-1.0, _v.x / sin_theta));
+}
+inline double Sinφ (Vector3& _v) {
+    auto sin_theta = SinΘ(_v);
+    return sin_theta == 0 ? 0 : Min(1.0, Max(-1.0, _v.y / sin_theta));
+}
 inline Vector3 Reflect(const Vector3& wi, const Vector3& n) // v outward n
 { return 2 * Dot(wi,n) * n - wi; }
-inline bool    Refract(const Vector3& wi, Vector3& wt, const Vector3& n, double eta) { 
+inline bool Refract(const Vector3& wi, Vector3& wt, const Vector3& n, double eta) { 
     // wi outward n // etat / etai
     double cos_i = Min(Dot(wi,n), 1.0);
     double sin2i = 1 - Sqr(cos_i);
@@ -98,8 +122,24 @@ inline bool    Refract(const Vector3& wi, Vector3& wt, const Vector3& n, double 
     wt = -wi/eta + (cos_i/eta - cos_r) * n;
     return true;
 }
-inline Eigen::Vector4d Homogeneous(const Vector3& v, double w=1) 
-{ return Eigen::Vector4d(v.x, v.y, v.z, w); }
+
+// Coordinate system
+inline Vector3 ToLocal(const Vector3& n, const Vector3& v) {
+    auto z = Normalize(n);      // z-axis upward
+    auto temp = Vector3(1, 0, 0);
+    if (Abs(Dot(z, temp)) > 0.99) temp = Vector3(0, 1, 0);
+    Vector3 x = Normalize(Cross(temp, z)); 
+    Vector3 y = Normalize(Cross(z, x));         
+    return Vector3(Dot(v,x), Dot(v,y), Dot(v,z));
+}
+inline Vector3 ToWorld(const Vector3& n, const Vector3& v) {
+    auto z = Normalize(n);      // z-axis upward
+    auto temp = Vector3(1, 0, 0);
+    if (Abs(Dot(z, temp)) > 0.99) temp = Vector3(0, 1, 0);
+    Vector3 x = Normalize(Cross(temp, z)); 
+    Vector3 y = Normalize(Cross(z, x));         
+    return x*v.x + y*v.y + z*v.z;
+}
 
 // Debugging
 inline std::string Str(const Vector3 v) 

@@ -1,7 +1,6 @@
 #include "global.h"
 #include "mathematics.h"
 #include "shapes.h"
-#include "ray.h"
 #include "scene.h"
 #include "bvhtree.h"
 #include "camera.h"
@@ -247,7 +246,9 @@ void CornellBox(uint32_t& minutes, uint32_t& seconds) {
     auto white = make_shared<Lambertian>(Colour(.73, .71, .68));
     auto green = make_shared<Lambertian>(Colour(.12, .45, .15));
     auto light = make_shared<Light>(Colour(1.0, .97, .86) * 60);
-    auto metal = make_shared<Metal>(Colour(0.8, 0.6, 0.5), 0.0);
+    auto metal = make_shared<MicroFacet>(Colour(.95, .64, .54), .002, .002, 1.0);
+    auto gin   = make_shared<MicroFacet>(Colour(.95, .93, .88),  0.3,  0.3, 0.8);
+    auto kin   = make_shared<MicroFacet>(Colour(1.0, .71, .29),  .05,  .05, 0.75);
     auto glass = make_shared<Dielectric>(1.5);
 
     scene.AddObject(make_shared<Quad>(Point3( 555,   0,   0), Vector3(   0, 555,   0), Vector3(   0,   0, 555), green));
@@ -255,19 +256,19 @@ void CornellBox(uint32_t& minutes, uint32_t& seconds) {
     scene.AddObject(make_shared<Quad>(Point3( 343, 554, 332), Vector3(-130,   0,   0), Vector3(   0,   0,-105), light));
     scene.AddObject(make_shared<Quad>(Point3(   0,   0,   0), Vector3( 555,   0,   0), Vector3(   0,   0, 555), white));
     scene.AddObject(make_shared<Quad>(Point3( 555, 555, 555), Vector3(-555,   0,   0), Vector3(   0,   0,-555), white));
-    scene.AddObject(make_shared<Quad>(Point3(   0,   0, 555), Vector3( 555,   0,   0), Vector3(   0, 555,   0), white));
+    scene.AddObject(make_shared<Quad>(Point3(   0,   0, 555), Vector3( 555,   0,   0), Vector3(   0, 555,   0), metal));
 
     auto rotate1 = RotateY(15.0);
     auto trans1  = Translate(Vector3(265, 0, 295));
-    scene.AddObject(CreateBox(Point3(0, 0, 0), Point3(165, 330, 165), white, trans1*rotate1));
+    scene.AddObject(CreateBox(Point3(0, 0, 0), Point3(165, 330, 165), kin, trans1*rotate1));
     auto rotate2 = RotateY(-18.0);
     auto trans2  = Translate(Vector3(130, 0, 65));
-    scene.AddObject(CreateBox(Point3(0, 0, 0), Point3(165, 165, 165), white, trans2*rotate2));
+    scene.AddObject(CreateBox(Point3(0, 0, 0), Point3(165, 165, 165), gin, trans2*rotate2));
 
     Camera camera;
     camera.aspect_ratio  = 1.0;
-    camera.image_width   = 800;
-    camera.sample_ppixel = 1600;
+    camera.image_width   = 900;
+    camera.sample_ppixel = 8100;
     camera.background    = Colour(0.0);
     camera.roulette      = 0.8;
 

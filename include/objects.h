@@ -15,12 +15,12 @@ inline shared_ptr<Scene> CreateBox(const Point3& a, const Point3& b, const share
     auto delta_y = Vector3(0, _max.y - _min.y, 0);
     auto delta_z = Vector3(0, 0, _max.z - _min.z);
 
-    sides->AddObject(make_shared<Quad>(Point3(_min.x, _min.y, _max.z),  delta_x,  delta_y, material, transform));    // Front
-    sides->AddObject(make_shared<Quad>(Point3(_max.x, _min.y, _min.z), -delta_x,  delta_y, material, transform));    // Back
-    sides->AddObject(make_shared<Quad>(Point3(_min.x, _min.y, _min.z),  delta_z,  delta_y, material, transform));    // Left
-    sides->AddObject(make_shared<Quad>(Point3(_max.x, _min.y, _max.z), -delta_z,  delta_y, material, transform));    // Right
-    sides->AddObject(make_shared<Quad>(Point3(_min.x, _max.y, _max.z),  delta_x, -delta_z, material, transform));    // Top
-    sides->AddObject(make_shared<Quad>(Point3(_min.x, _min.y, _min.z),  delta_x,  delta_z, material, transform));    // Bottom
+    sides->AddObject(make_shared<Quad>(Point3(_min.x, _min.y, _max.z),  delta_x,  delta_y, material, Vector3( 0,  0,  1), transform));    // Front
+    sides->AddObject(make_shared<Quad>(Point3(_max.x, _min.y, _min.z), -delta_x,  delta_y, material, Vector3( 0,  0, -1), transform));    // Back
+    sides->AddObject(make_shared<Quad>(Point3(_min.x, _min.y, _min.z),  delta_z,  delta_y, material, Vector3(-1,  0,  0), transform));    // Left
+    sides->AddObject(make_shared<Quad>(Point3(_max.x, _min.y, _max.z), -delta_z,  delta_y, material, Vector3( 1,  0,  0), transform));    // Right
+    sides->AddObject(make_shared<Quad>(Point3(_min.x, _max.y, _max.z),  delta_x, -delta_z, material, Vector3( 0,  1,  0), transform));    // Top
+    sides->AddObject(make_shared<Quad>(Point3(_min.x, _min.y, _min.z),  delta_x,  delta_z, material, Vector3( 0, -1,  0), transform));    // Bottom
 
     return sides;
 }

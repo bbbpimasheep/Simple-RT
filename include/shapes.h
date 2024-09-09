@@ -4,7 +4,6 @@
 
 #include "global.h"
 #include "bounds.h"
-#include "ray.h"
 #include "mathematics.h"
 
 class Material;
@@ -24,6 +23,7 @@ struct Intersection {
         normal = outside ? outward_normal : -outward_normal;
     }
 };
+
 
 class Shapes {
 public:
@@ -122,106 +122,94 @@ private:
 class Quad: public Shapes, public std::enable_shared_from_this<Quad> {
 public:
     // Constructors
-    Quad(const Point3& _pin, const Vector3& _u, const Vector3& _v, shared_ptr<Material> _material) 
-         : pin(_pin), vec_u(_u), vec_v(_v), material(_material), transform(Transform()) { 
+    Quad(const Point3& _vertex, const Vector3& _u, const Vector3& _v, shared_ptr<Material> _material) 
+         : vert0(_vertex), vec_u(_u), vec_v(_v), material(_material), transform(Transform()) { 
         // Compute the normal and constant of the plane equation
-        auto n = Cross(vec_u, vec_v);
-        normal = Normalize(n); 
-        constant = Dot(pin, normal);
-        vec_w = n / Dot(n, n);
+        normal = Normalize(Cross(vec_u, vec_v)); 
+        back_culling = false;
         CountBBox(); 
     }
-    Quad(const Point3& _pin, const Vector3& _u, const Vector3& _v, shared_ptr<Material> _material,
+    Quad(const Point3& _vertex, const Vector3& _u, const Vector3& _v, shared_ptr<Material> _material,
          const Transform& _transform) 
          : transform(_transform), 
-           pin(_transform.Apply(Homogeneous(_pin, 1.0))), 
+           vert0(_transform.Apply(Homogeneous(_vertex, 1.0))), 
            vec_u(_transform.Apply(Homogeneous(_u, 0.0))), 
            vec_v(_transform.Apply(Homogeneous(_v, 0.0))), 
            material(_material) { 
         // Compute the normal and constant of the plane equation
-        auto n = Cross(vec_u, vec_v);
-        normal = Normalize(n); 
-        constant = Dot(pin, normal);
-        vec_w = n / Dot(n, n);
+        normal = Normalize(Cross(vec_u, vec_v)); 
+        back_culling = false;
+        CountBBox(); 
+    }
+    Quad(const Point3& _vertex, const Vector3& _u, const Vector3& _v, shared_ptr<Material> _material,
+         const Vector3& _normal, const Transform& _transform) 
+         : transform(_transform), 
+           vert0(_transform.Apply(Homogeneous(_vertex, 1.0))), 
+           vec_u(_transform.Apply(Homogeneous(_u, 0.0))), 
+           vec_v(_transform.Apply(Homogeneous(_v, 0.0))), 
+           material(_material) { 
+        // Compute the normal and constant of the plane equation
+        normal = _transform.Apply(Homogeneous(_normal, 0.0)); 
+        normal = Normalize(normal); 
+        back_culling = true;
         CountBBox(); 
     }
 
     // Methods
     virtual void CountBBox() {
         // Compute the bounding box of all four vertices.
-        auto bbox_diagonal1 = Bounds3(pin, pin + vec_u + vec_v);
-        auto bbox_diagonal2 = Bounds3(pin + vec_u, pin + vec_v);
+        auto bbox_diagonal1 = Bounds3(vert0, vert0 + vec_u + vec_v);
+        auto bbox_diagonal2 = Bounds3(vert0 + vec_u, vert0 + vec_v);
         bbox = Union(bbox_diagonal1, bbox_diagonal2);
     }
     Bounds3 BBox() const override { return bbox; }
     double Area() const override { return Length(Cross(vec_u, vec_v)); }
     bool Intersect(const Ray& ray, Interval ray_time, Intersection& isect) const override {
-        auto denominator = Dot(ray.dir, normal);
-        if (Abs(denominator) < EPS_DEUX) 
+        if (back_culling && Dot(normal, ray.dir) > 0)
             return false;
-        auto t = (constant - Dot(ray.org, normal)) / denominator;
-        if (!ray_time.Contains(t)) 
-            return false;
-        auto isect_to_pin = ray(t) - pin;
-        auto alpha = Dot(vec_w, Cross(isect_to_pin, vec_v));
-        auto beta  = Dot(vec_w, Cross(vec_u, isect_to_pin));
-        if (!Interior(alpha, beta, isect))
-            return false;
+        auto vert1 = vert0 + vec_u;
+        auto vert2 = vert0 + vec_v;
+        auto vert3 = vert0 + vec_u + vec_v;
+        auto u=.0, v=.0, t=.0;
+        if (TriangleIsect(vec_u, vec_v, vert0, ray, t, u, v)) {
+            isect.u = u; isect.v = v;
+        } else if (TriangleIsect(-vec_u, -vec_v, vert3, ray, t, u, v)) {
+            isect.u = 1 - u; isect.v = 1 - v;
+        } else return false;
 
+        if (!ray_time.Contains(t)) return false;
         isect.coords = ray(t);
         isect.time = t;
         isect.material = material;
         isect.object = shared_from_this();
-        isect.SetOutward(ray, normal);
+        if (back_culling) 
+            isect.normal = normal;
+        else 
+            isect.SetOutward(ray, normal);
         return true;
     }
     void Sample(Intersection& isect, double& pdf) const override {
         auto u = RandomFloat(), v = RandomFloat();
-        auto p = pin + u*vec_u + v*vec_v;
+        auto p = vert0 + u*vec_u + v*vec_v;
         isect.coords = p;
         isect.time = 0.0;
         isect.material = material;
+        if (back_culling) 
+            isect.normal = normal;
         pdf = 1.0 / Area();
     }
     bool Shines() const override;
-    
-    virtual bool Interior(double _a, double _b, Intersection& isect) const {
-        Interval unit_interval = Interval(0, 1);
-        if (!unit_interval.Contains(_a) || !unit_interval.Contains(_b))
-            return false;
-        isect.u = _a;
-        isect.v = _b;
-        return true;
-    }
 
 private:
     // Members
-    Point3 pin;
-    Vector3 vec_u, vec_v, vec_w, normal;
-    shared_ptr<Material> material;
+    Point3 vert0;
+    Vector3 vec_u, vec_v;
+    Vector3 normal;
     Bounds3 bbox;
-    double constant;
     Transform transform;
+    bool back_culling;
+    shared_ptr<Material> material;
 };
-
-// Inline Functions
-inline Vector3 SampleU_Hemisphere(const Vector3& normal) {
-    auto u1 = RandomFloat(), u2 = RandomFloat();
-    auto z = u1, r = Sqrt(Max(0.0, 1.0 - z*z));
-    auto phi = u2 * 2*M_PI;
-    auto local_sample = Vector3(r * Cos(phi), r * Sin(phi), z);
-
-    Vector3 vec_b, vec_c;
-    if (Abs(normal.x) > Abs(normal.y)) {
-        auto length_inv = 1.0 / Sqrt(normal.x*normal.x + normal.z*normal.z);
-        vec_c = Vector3(normal.z * length_inv, 0.0, -normal.x * length_inv);
-    } else {
-        auto length_inv = 1.0 / Sqrt(normal.y*normal.y + normal.z*normal.z);
-        vec_c = Vector3(0.0, normal.z * length_inv, -normal.y * length_inv);
-    }
-    vec_b = Cross(vec_c, normal);
-    return local_sample.x*vec_b + local_sample.y*vec_c + local_sample.z*normal;
-}
 
 
 #endif // SHAPES_H

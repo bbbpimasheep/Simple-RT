@@ -33,7 +33,11 @@ inline double Sqrt(T value) { return std::sqrt(value); }
 template <typename T>
 inline T Abs(T value) { return std::abs(value); }
 template <typename T>
+inline T Pow(T value, int exponent) { return std::pow(value, exponent); }
+template <typename T>
 inline void Swap(T& value1, T& value2) { std::swap(value1, value2); }
+template <typename T>
+inline T Lerp(T value1, T value2, double t) { return (1.0-t)*value1 + t*value2; }
 template <typename T>
 inline double Sin(T value) { return std::sin(value); }
 template <typename T>
@@ -71,12 +75,20 @@ inline double RandomFloat(double a, double b) { return a + (b - a) * RandomFloat
 inline double DegtoRad(double degrees) { return degrees * M_PI / 180.0; }
 
 inline void ProgressBar(double progress) {
-    int width = 80;
+    int width = 81;
     int ratio = int(progress * width);
     std::clog << "\r[";
     for (int i = 0; i < width; i += 1) {
-        if (i < ratio) std::clog << '#';
-        else std::clog << '=';
+        if (ratio < 27) {
+            if (i < ratio) std::clog << "\033[31m" << "#" << "\033[0m";
+            else std::clog << "=";
+        } else if (ratio < 63) {
+            if (i < ratio) std::clog << "\033[33m" << "#" << "\033[0m";
+            else std::clog << "=";
+        } else {
+            if (i < ratio) std::clog << "\033[32m" << "#" << "\033[0m";
+            else std::clog << "=";
+        }
     }
     std::clog << "] " << fixed << setprecision(1) << progress*100.0 << "%" << std::flush;
 }

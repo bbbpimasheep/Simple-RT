@@ -2,7 +2,7 @@
 #ifndef RAY_H
 #define RAY_H
 
-#include "mathematics.h"
+#include "vector.h"
 #include "global.h"
 
 class Ray {
