@@ -19,8 +19,8 @@ struct Intersection {
     shared_ptr<const Shapes> object;
 
     void SetOutward(const Ray& ray, const Vector3& outward_normal) {
+        normal  = outward_normal;
         outside = Dot(ray.dir, outward_normal) < 0;
-        normal = outside ? outward_normal : -outward_normal;
     }
 };
 
@@ -126,7 +126,13 @@ public:
          : vert0(_vertex), vec_u(_u), vec_v(_v), material(_material), transform(Transform()) { 
         // Compute the normal and constant of the plane equation
         normal = Normalize(Cross(vec_u, vec_v)); 
-        back_culling = false;
+        CountBBox(); 
+    }
+    Quad(const Point3& _vertex, const Vector3& _u, const Vector3& _v, 
+         shared_ptr<Material> _material, const Vector3& _normal)
+         : vert0(_vertex), vec_u(_u), vec_v(_v), material(_material), transform(Transform()) { 
+        // Compute the normal and constant of the plane equation
+        normal = Normalize(_normal); 
         CountBBox(); 
     }
     Quad(const Point3& _vertex, const Vector3& _u, const Vector3& _v, shared_ptr<Material> _material,
@@ -138,7 +144,6 @@ public:
            material(_material) { 
         // Compute the normal and constant of the plane equation
         normal = Normalize(Cross(vec_u, vec_v)); 
-        back_culling = false;
         CountBBox(); 
     }
     Quad(const Point3& _vertex, const Vector3& _u, const Vector3& _v, shared_ptr<Material> _material,
@@ -151,7 +156,6 @@ public:
         // Compute the normal and constant of the plane equation
         normal = _transform.Apply(Homogeneous(_normal, 0.0)); 
         normal = Normalize(normal); 
-        back_culling = true;
         CountBBox(); 
     }
 
@@ -165,12 +169,10 @@ public:
     Bounds3 BBox() const override { return bbox; }
     double Area() const override { return Length(Cross(vec_u, vec_v)); }
     bool Intersect(const Ray& ray, Interval ray_time, Intersection& isect) const override {
-        if (back_culling && Dot(normal, ray.dir) > 0)
-            return false;
         auto vert1 = vert0 + vec_u;
         auto vert2 = vert0 + vec_v;
         auto vert3 = vert0 + vec_u + vec_v;
-        auto u=.0, v=.0, t=.0;
+        auto u =.0, v =.0, t =.0;
         if (TriangleIsect(vec_u, vec_v, vert0, ray, t, u, v)) {
             isect.u = u; isect.v = v;
         } else if (TriangleIsect(-vec_u, -vec_v, vert3, ray, t, u, v)) {
@@ -182,10 +184,7 @@ public:
         isect.time = t;
         isect.material = material;
         isect.object = shared_from_this();
-        if (back_culling) 
-            isect.normal = normal;
-        else 
-            isect.SetOutward(ray, normal);
+        isect.SetOutward(ray, normal);
         return true;
     }
     void Sample(Intersection& isect, double& pdf) const override {
@@ -194,8 +193,7 @@ public:
         isect.coords = p;
         isect.time = 0.0;
         isect.material = material;
-        if (back_culling) 
-            isect.normal = normal;
+        isect.normal = normal;
         pdf = 1.0 / Area();
     }
     bool Shines() const override;
@@ -207,7 +205,6 @@ private:
     Vector3 normal;
     Bounds3 bbox;
     Transform transform;
-    bool back_culling;
     shared_ptr<Material> material;
 };
 

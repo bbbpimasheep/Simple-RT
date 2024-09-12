@@ -26,7 +26,7 @@ public:
                 auto pixel_colour = Colour(0, 0, 0);
                 for (int s = 0; s < sample_ppixel; s += 1) {
                     Ray ray = CastRay(x, y, s);
-                    pixel_colour += RayColour(ray, scene, max_depth);
+                    pixel_colour += RayColour(ray, scene, Colour(1));
                 }
                 frame_buffer[y * image_width + x] = pixel_colour * spp_inv;
             }
@@ -93,7 +93,7 @@ private:
         sample_du = pixel_du / (spp_root+1);
         sample_dv = pixel_dv / (spp_root+1);
     }
-    Colour RayColour(const Ray& ray, const Shapes& _world, int depth) {
+    Colour RayColour(const Ray& ray, const Shapes& _world, Colour beta) {
 
         const Scene& world = dynamic_cast<const Scene&>(_world);
         Intersection isect;
@@ -107,63 +107,66 @@ private:
             emission = isect.material->Emission(isect.u, isect.v, isect.coords);
             return emission;
         }
-        Colour radiance(emission), incidence(0);
-        double PDF_illu, PDF_brdf, PDF_mult;
+        Colour L_dir(0), L_ind(0);
+        double PDF_illu, PDF_bsdf, PDF_mult;
 
         auto wi = scattered.dir;
         auto wo = -ray.dir;
         auto No = isect.normal;
-        auto BRDF = isect.material->BRDFunc(wi, wo, No, attenuation);
+        auto BSDF = isect.material->BRDFunc(wi, wo, No, attenuation);
         
-        if (RandomFloat() <= roulette) {
-            // Light Sampling
-            Intersection samp_isect;
-            world.SampleLights(samp_isect, PDF_illu);
-            auto Li_dis = samp_isect.coords - isect.coords;
-            auto Li_dir = Normalize(Li_dis);
-            auto Li_ray = Ray(isect.coords, Li_dir);
+        // Light Sampling
+        Intersection samp_isect;
+        world.SampleLights(samp_isect, PDF_illu);
+        auto Li_dis = samp_isect.coords - isect.coords;
+        auto Li_dir = Normalize(Li_dis);
+        auto Li_ray = Ray(isect.coords, Li_dir);
 
-            auto r = RandomFloat(), prob = 0.5;
-            if ((r <= prob) && (!isect.material->Glossy())) {
+        // Russian Roulette
+        // roulette = Min(1.0, beta.MaxValue());
+        if (RandomFloat() <= roulette) { 
+            if (!isect.material->Glossy()) {
                 // Visibility Test
-                if ((world.Intersect(Li_ray, Interval(EPS_QUAT, POS_INF), samp_isect)) &&
-                    (Length(Li_dis) - Length(isect.coords + No*EPS_DEUX - samp_isect.coords) <= EPS_UNIT)) {
+                if ((world.Intersect(Li_ray, Interval(EPS_DEUX, POS_INF), samp_isect)) &&
+                    (Length(Li_dis) - Length(isect.coords - samp_isect.coords) <= EPS_UNIT)) {
                     // Direct Illumination
                     auto Li = samp_isect.material->Emission(samp_isect.u, samp_isect.v, samp_isect.coords);
                     auto wi = Li_dir;
                     // Multiple Importance Sampling
-                    PDF_brdf = isect.material->PDFunc(wi, wo, No);
+                    PDF_bsdf = isect.material->PDFunc(wi, wo, No);
                     PDF_illu = PDF_illu * Length2(Li_dis) / Abs(Dot(-wi, samp_isect.normal)); // Light to Solid Angle
-                    PDF_mult = PDF_brdf + PDF_illu;
+                    PDF_mult = PDF_bsdf + PDF_illu;
 
-                    incidence = PDF_mult > EPS_DEUX ? 
-                                BRDF * Li * Dot(wi, No) / (PDF_mult * prob) : 
-                                Colour(0);
-                } 
-            } else {
-                // Indirect Illumination
-                if ((world.Intersect(scattered, Interval(EPS_QUAT, POS_INF), samp_isect)) &&
-                    (Dot(wi, No) >= 0)) {
-                    PDF_brdf = isect.material->PDFunc(wi, wo, No);
-                    // Multiple Importance Sampling
-                    Intersection test_isect;
-                    if (samp_isect.material->Shines())
-                        samp_isect.object->Sample(test_isect, PDF_illu);
-                    else 
-                        PDF_illu = 0.0;
-                    PDF_illu = PDF_illu * Length2(Li_dis) / Abs(Dot(-wi, samp_isect.normal)); // Light to Solid Angle
-                    PDF_mult = PDF_brdf + PDF_illu;
-
-                    incidence = PDF_mult > EPS_DEUX ? 
-                                BRDF * RayColour(scattered, world, depth-1) * Dot(wi, No) / (PDF_mult * (1-prob)) : 
-                                Colour(0);
-                    if (isect.material->Glossy()) incidence *= (PDF_mult / PDF_brdf * (1-prob));
+                    L_dir = PDF_mult > EPS_DEUX ? BSDF * Li * Abs(Dot(wi, No)) / PDF_mult : Colour(0);
                 }
+            }
+            // Indirect Illumination
+            if ((world.Intersect(scattered, Interval(EPS_DEUX, POS_INF), samp_isect))) {
+                PDF_bsdf = isect.material->PDFunc(wi, wo, No);
+                Intersection test_isect; 
+                PDF_illu = 0.0;
+                if (samp_isect.material->Shines())
+                    samp_isect.object->Sample(test_isect, PDF_illu);
+                PDF_illu = PDF_illu * Length2(Li_dis) / Abs(Dot(-wi, samp_isect.normal)); // Light to Solid Angle
+                PDF_mult = PDF_bsdf + PDF_illu;
+                // Multiple Importance Sampling
+                beta = beta * BSDF * Abs(Dot(wi, No)) / PDF_bsdf / roulette;
+                if (isect.material->Transmissive()) 
+                    beta *= Sqr(isect.material->EtaIndex());
+
+                if (isect.material->Glossy())
+                    L_ind = PDF_bsdf > EPS_DEUX
+                          ? BSDF * RayColour(scattered, world, beta) * Abs(Dot(wi, No)) / PDF_bsdf
+                          : Colour(0);
+                else
+                    L_ind = PDF_mult > EPS_DEUX
+                          ? BSDF * RayColour(scattered, world, beta) * Abs(Dot(wi, No)) / PDF_mult
+                          : Colour(0);
             }
         }
 
-        radiance += incidence / roulette;
-        return Vector3::Min(Vector3::Max(radiance, Colour(0)), Colour(10));
+        auto radiance = (L_dir + L_ind) / roulette;
+        return Vector3::Min(Vector3::Max(radiance, Colour(0)), Colour(12));
     }
     Ray CastRay(int x, int y, int s) {
         auto pixel_centre = pixel00_centre + pixel_du*x + pixel_dv*y;

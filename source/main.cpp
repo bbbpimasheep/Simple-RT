@@ -5,7 +5,7 @@
 #include "bvhtree.h"
 #include "camera.h"
 #include "objects.h"
-#include "material.h"
+#include "materials.h"
 #include "texture.h"
 
 Point3 RandomCentre(double x, double y, double z)
@@ -246,29 +246,38 @@ void CornellBox(uint32_t& minutes, uint32_t& seconds) {
     auto white = make_shared<Lambertian>(Colour(.73, .71, .68));
     auto green = make_shared<Lambertian>(Colour(.12, .45, .15));
     auto light = make_shared<Light>(Colour(1.0, .97, .86) * 60);
-    auto metal = make_shared<MicroFacet>(Colour(.95, .64, .54), .002, .002, 1.0);
-    auto gin   = make_shared<MicroFacet>(Colour(.95, .93, .88),  0.3,  0.3, 0.8);
-    auto kin   = make_shared<MicroFacet>(Colour(1.0, .71, .29),  .05,  .05, 0.75);
-    auto glass = make_shared<Dielectric>(1.5);
+    auto metCu = make_shared<Conductor>(Colour(.95, .64, .54), .002, .002, 1.0);
+    auto metAg = make_shared<Conductor>(Colour(.95, .93, .88),  0.5,  0.5, 0.8);
+    auto metAu = make_shared<Conductor>(Colour(1.0, .71, .29), .001, .001, 1.0);
+    auto metAl = make_shared<Conductor>(Colour(.91, .92, .92),  0.3,  0.3, 0.4);
+    auto glass = make_shared<SpecularDielectric>(1.5);
 
-    scene.AddObject(make_shared<Quad>(Point3( 555,   0,   0), Vector3(   0, 555,   0), Vector3(   0,   0, 555), green));
-    scene.AddObject(make_shared<Quad>(Point3(   0,   0,   0), Vector3(   0, 555,   0), Vector3(   0,   0, 555), red));
-    scene.AddObject(make_shared<Quad>(Point3( 343, 554, 332), Vector3(-130,   0,   0), Vector3(   0,   0,-105), light));
-    scene.AddObject(make_shared<Quad>(Point3(   0,   0,   0), Vector3( 555,   0,   0), Vector3(   0,   0, 555), white));
-    scene.AddObject(make_shared<Quad>(Point3( 555, 555, 555), Vector3(-555,   0,   0), Vector3(   0,   0,-555), white));
-    scene.AddObject(make_shared<Quad>(Point3(   0,   0, 555), Vector3( 555,   0,   0), Vector3(   0, 555,   0), metal));
+    auto NORM_L = Vector3(-1,  0,  0);
+    auto NORM_R = Vector3( 1,  0,  0);
+    auto NORM_B = Vector3( 0,  1,  0);
+    auto NORM_T = Vector3( 0, -1,  0);
+    auto NORM_Z = Vector3( 0,  0,  1);
+    auto NORM_G = Vector3( 0,  0, -1);
+
+    scene.AddObject(make_shared<Quad>(Point3( 555,   0,   0), Vector3(   0, 555,   0), Vector3(   0,   0, 555), green, NORM_L));
+    scene.AddObject(make_shared<Quad>(Point3(   0,   0,   0), Vector3(   0, 555,   0), Vector3(   0,   0, 555), red,   NORM_R));
+    scene.AddObject(make_shared<Quad>(Point3( 343, 554, 332), Vector3(-130,   0,   0), Vector3(   0,   0,-105), light, NORM_T));
+    scene.AddObject(make_shared<Quad>(Point3(   0,   0,   0), Vector3( 555,   0,   0), Vector3(   0,   0, 555), white, NORM_B));
+    scene.AddObject(make_shared<Quad>(Point3( 555, 555, 555), Vector3(-555,   0,   0), Vector3(   0,   0,-555), white, NORM_T));
+    scene.AddObject(make_shared<Quad>(Point3(   0,   0, 555), Vector3( 555,   0,   0), Vector3(   0, 555,   0), white, NORM_G));
+    // scene.AddObject(make_shared<Quad>(Point3( 200, 300, 400), Vector3(-200,   0,   0), Vector3(   0, 200,   0), white, NORM_G));
 
     auto rotate1 = RotateY(15.0);
     auto trans1  = Translate(Vector3(265, 0, 295));
-    scene.AddObject(CreateBox(Point3(0, 0, 0), Point3(165, 330, 165), kin, trans1*rotate1));
+    scene.AddObject(CreateBox(Point3(0, 0, 0), Point3(165, 330, 165), glass, trans1*rotate1));
     auto rotate2 = RotateY(-18.0);
     auto trans2  = Translate(Vector3(130, 0, 65));
-    scene.AddObject(CreateBox(Point3(0, 0, 0), Point3(165, 165, 165), gin, trans2*rotate2));
+    scene.AddObject(CreateBox(Point3(0, 0, 0), Point3(165, 165, 165), metCu, trans2*rotate2));
 
     Camera camera;
     camera.aspect_ratio  = 1.0;
-    camera.image_width   = 900;
-    camera.sample_ppixel = 8100;
+    camera.image_width   = 1024;
+    camera.sample_ppixel = 1024;
     camera.background    = Colour(0.0);
     camera.roulette      = 0.8;
 
