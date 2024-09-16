@@ -56,7 +56,7 @@ void BouncingBalls(uint32_t& minutes, uint32_t& seconds) {
                 scene.AddObject(make_shared<Sphere>(centre, r, MATsphere));
             } else {
                 // Glass Sphere
-                MATsphere = make_shared<Dielectric>(1.5);
+                MATsphere = make_shared<SpecularDielectric>(1.5);
                 scene.AddObject(make_shared<Sphere>(centre, r, MATsphere));
             }
             ProgressBar(((z+15) * 30 + (x+15) + 1)/ 900.0);
@@ -66,10 +66,10 @@ void BouncingBalls(uint32_t& minutes, uint32_t& seconds) {
     std::clog << "\nGenerating Scene Complete! \n";
 
     auto MATdiffuse    = make_shared<Lambertian>(Colour(0.4, 0.2, 0.1));
-    auto MATdielectric = make_shared<Dielectric>(1.5);
+    auto MATDielectric = make_shared<SpecularDielectric>(1.5);
     auto MATmetalllic  = make_shared<Metal>(Colour(0.7, 0.6, 0.5), 0.0);
     scene.AddObject(make_shared<Sphere>(Point3(-6, 1, 0), radius_large, MATdiffuse));
-    scene.AddObject(make_shared<Sphere>(Point3(-1, 1, 0), radius_large, MATdielectric));
+    scene.AddObject(make_shared<Sphere>(Point3(-1, 1, 0), radius_large, MATDielectric));
     scene.AddObject(make_shared<Sphere>(Point3( 4, 1, 0), radius_large, MATmetalllic));
 
     scene = Scene(make_shared<BVHNode>(scene));
@@ -250,7 +250,7 @@ void CornellBox(uint32_t& minutes, uint32_t& seconds) {
     auto metAg = make_shared<Conductor>(Colour(.95, .93, .88),  0.5,  0.5, 0.8);
     auto metAu = make_shared<Conductor>(Colour(1.0, .71, .29), .001, .001, 1.0);
     auto metAl = make_shared<Conductor>(Colour(.91, .92, .92),  0.3,  0.3, 0.4);
-    auto glass = make_shared<SpecularDielectric>(1.5);
+    auto glass = make_shared<Dielectric>(1.5, 0.5, 0.5);
 
     auto NORM_L = Vector3(-1,  0,  0);
     auto NORM_R = Vector3( 1,  0,  0);
@@ -265,14 +265,13 @@ void CornellBox(uint32_t& minutes, uint32_t& seconds) {
     scene.AddObject(make_shared<Quad>(Point3(   0,   0,   0), Vector3( 555,   0,   0), Vector3(   0,   0, 555), white, NORM_B));
     scene.AddObject(make_shared<Quad>(Point3( 555, 555, 555), Vector3(-555,   0,   0), Vector3(   0,   0,-555), white, NORM_T));
     scene.AddObject(make_shared<Quad>(Point3(   0,   0, 555), Vector3( 555,   0,   0), Vector3(   0, 555,   0), white, NORM_G));
-    // scene.AddObject(make_shared<Quad>(Point3( 200, 300, 400), Vector3(-200,   0,   0), Vector3(   0, 200,   0), white, NORM_G));
 
     auto rotate1 = RotateY(15.0);
     auto trans1  = Translate(Vector3(265, 0, 295));
     scene.AddObject(CreateBox(Point3(0, 0, 0), Point3(165, 330, 165), glass, trans1*rotate1));
     auto rotate2 = RotateY(-18.0);
     auto trans2  = Translate(Vector3(130, 0, 65));
-    scene.AddObject(CreateBox(Point3(0, 0, 0), Point3(165, 165, 165), metCu, trans2*rotate2));
+    scene.AddObject(CreateBox(Point3(0, 0, 0), Point3(165, 165, 165), metAg, trans2*rotate2));
 
     Camera camera;
     camera.aspect_ratio  = 1.0;

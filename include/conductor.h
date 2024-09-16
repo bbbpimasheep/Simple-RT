@@ -30,19 +30,19 @@ public:
         attenuation = texture->Value(isect.u, isect.v, isect.coords);
         return true;
     }
-    double PDFunc(const Vector3& wi, const Vector3& wo, const Vector3& normal) const override {
-        auto wi_local = ToLocal(normal, wi);
-        auto wo_local = ToLocal(normal, wo);
-        auto wm_local = wi_local + wo_local;
-        if (Length2(wm_local) == 0) 
+    double PDFunc(const Vector3& _wi, const Vector3& _wo, const Vector3& normal) const override {
+        auto wi = ToLocal(normal, _wi);
+        auto wo = ToLocal(normal, _wo);
+        auto wm = wi + wo;
+        if (Length2(wm) == 0) 
             return 0;
-        wm_local = Normalize(wm_local);
-        if (wm_local.z < 0) 
-            wm_local *= -1;
-        auto pdf_wm = MaskingFunc(wi_local) / Abs(CosΘ(wi_local)) * 
-                      DistributionGGX(wm_local) * 
-                      Abs(Dot(wi_local, wm_local));
-        return pdf_wm / (4.0 * Abs(Dot(wm_local, wo_local)));
+        wm = Normalize(wm);
+        if (wm.z < 0) 
+            wm *= -1;
+        auto pdf_wm = MaskingFunc(wi) / Abs(CosΘ(wi)) * 
+                      DistributionGGX(wm) * 
+                      Abs(Dot(wi, wm));
+        return pdf_wm / (4.0 * Abs(Dot(wm, wo)));
     }
     Colour BRDFunc(const Vector3& _wi, const Vector3& _wo, const Vector3& normal,
                     const Colour& attenuation) const override {
@@ -76,7 +76,7 @@ private:
         return (Sqrt(1 + alpha2 * tan2_theta) - 1) / 2.0;
     }
     double ShadingSmith(Vector3& wi, Vector3& wo) const { return 1.0 / (1.0 + Lambda(wi) + Lambda(wo)); }
-    double MaskingFunc(Vector3& _w) const { return 1.0 / (1 + Lambda(_w)); }
+    double MaskingFunc (Vector3& _w) const { return 1.0 / (1 + Lambda(_w)); }
     Vector3 SampleHalfVector(const Vector3& wo) const {
         auto wh = Normalize(Vector3(alpha_x * wo.x, alpha_y * wo.y, wo.z));
         if (wh.z < 0) wh *= -1;
@@ -97,6 +97,7 @@ private:
     double metalness;
     Colour r0;
 };
+
 
 class Specular : public Material {
 public:
@@ -132,6 +133,7 @@ public:
     double metalness;
     Colour r0;
 };
+
 
 class Conductor : public Material {
 public:
@@ -179,13 +181,13 @@ public:
     }
 
 private:
+    // Methods
+    bool SuperGlossy(double x, double y) { return Max(x, y) <= .001; }
+
     // Members
     shared_ptr<MicroFacet> micr;
     shared_ptr<Specular> spec;
     bool super_glossy;
-
-    // Methods
-    bool SuperGlossy(double x, double y) { return Max(x, y) <= .001; }
 };
 
 
